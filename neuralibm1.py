@@ -310,10 +310,14 @@ class NeuralIBM1Model:
     
   def get_viterbi(self, x, y):
     """Returns the Viterbi alignment for (x, y)"""
-    
+
+    y_prev = np.roll(y, 1, axis=1)
+    y_prev[:, 0] = 0
+
     feed_dict = {
       self.x : x,  # English
-      self.y : y   # French
+      self.y : y,   # French
+      self.y_prev : y_prev
     }
     
     # run model on this input
@@ -323,20 +327,28 @@ class NeuralIBM1Model:
     
     # things to return
     batch_size, longest_y = y.shape
+    _, longest_x = x.shape
     alignments = np.zeros((batch_size, longest_y), dtype="int64")
     probabilities = np.zeros((batch_size, longest_y), dtype="float32")
-    
+
     for b, sentence in enumerate(y):
+      fprev = 0
       for j, french_word in enumerate(sentence):
         if french_word == 0:  # Padding
           break
-          
-        probs = py_xa[b, :, y[b, j]]
+
+        # index by previous f word. Keep track.
+        # py_xa      Shape: [B, *N*M*, Vy]
+        # probs = py_xa[b,:,y[b,j]] # y[b,j] means only the word f_j in the sentence b
+        fprevs = [fprev + (k * longest_y) for k in range(longest_x)]
+        probs = py_xa[b, fprevs, y[b, j]]  # y[b,j] means only the word f_j in the sentence b
         a_j = probs.argmax()
         p_j = probs[a_j]
-        
+
         alignments[b, j] = a_j
         probabilities[b, j] = p_j
+
+        fprev = j
     
     return alignments, probabilities, acc_correct, acc_total
 

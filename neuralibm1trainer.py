@@ -161,7 +161,7 @@ class NeuralIBM1Trainer:
       # save parameters
       save_path = self.model.save(self.session, path="model.ckpt")
       print("Model saved in file: %s" % save_path)
-        
+
     return dev_AERs, test_AERs, train_likelihoods, dev_likelihoods
 
   def likelihood(self, mode='dev'):
@@ -185,13 +185,16 @@ class NeuralIBM1Trainer:
     for k, batch in enumerate(batches, 1):
       x, y = prepare_data(batch, self.model.x_vocabulary,
                           self.model.y_vocabulary)
+      y_prev = np.roll(y, 1, axis=1)
+      y_prev[:, 0] = 0
 
       # Dynamic learning rate, cf. Bottou (2012), Stochastic gradient descent tricks.
       lr_t = 0
 
       feed_dict = {
         self.model.x: x,
-        self.model.y: y
+        self.model.y: y,
+        self.model.y_prev : y_prev
       }
 
       # things we want TF to return to us from the computation
