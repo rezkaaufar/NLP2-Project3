@@ -161,6 +161,8 @@ class NeuralIBM1Trainer:
       # save parameters
       save_path = self.model.save(self.session, path="model.ckpt")
       print("Model saved in file: %s" % save_path)
+        
+    return dev_AERs, test_AERs, train_likelihoods, dev_likelihoods
 
   def likelihood(self, mode='dev'):
     """
