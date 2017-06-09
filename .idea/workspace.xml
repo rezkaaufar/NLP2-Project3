@@ -15,11 +15,11 @@
   <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="neuralibm1.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="neuralibm1.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/neuralibm1.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2394">
-              <caret line="325" column="26" lean-forward="true" selection-start-line="325" selection-start-column="26" selection-end-line="325" selection-end-column="26" />
+            <state relative-caret-position="564">
+              <caret line="458" column="0" lean-forward="true" selection-start-line="458" selection-start-column="0" selection-end-line="458" selection-end-column="0" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -27,10 +27,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="vae.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="vae.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/vae.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-829">
+            <state relative-caret-position="855">
               <caret line="186" column="4" lean-forward="false" selection-start-line="186" selection-start-column="4" selection-end-line="186" selection-end-column="4" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
@@ -42,8 +42,8 @@
       <file leaf-file-name="neuralibm1trainer.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/neuralibm1trainer.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="954">
-              <caret line="196" column="34" lean-forward="false" selection-start-line="196" selection-start-column="34" selection-end-line="196" selection-end-column="34" />
+            <state relative-caret-position="309">
+              <caret line="66" column="16" lean-forward="false" selection-start-line="66" selection-start-column="16" selection-end-line="66" selection-end-column="16" />
               <folding>
                 <element signature="e#521#1725#0" expanded="false" />
               </folding>
@@ -76,14 +76,16 @@
   <component name="FindInProjectRecents">
     <findStrings>
       <find>feed</find>
+      <find>evaluate</find>
+      <find>none</find>
     </findStrings>
   </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/neuralibm1.py" />
-        <option value="$PROJECT_DIR$/neuralibm1trainer.py" />
         <option value="$PROJECT_DIR$/vae.py" />
+        <option value="$PROJECT_DIR$/neuralibm1trainer.py" />
+        <option value="$PROJECT_DIR$/neuralibm1.py" />
       </list>
     </option>
   </component>
@@ -279,7 +281,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-1" y="0" width="1368" height="744" extended-state="6" />
+    <frame x="-1" y="0" width="1368" height="744" extended-state="7" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.24944155" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -382,10 +384,143 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/vae.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="855">
+          <caret line="186" column="4" lean-forward="false" selection-start-line="186" selection-start-column="4" selection-end-line="186" selection-end-column="4" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/T3trainer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="474">
+          <caret line="76" column="22" lean-forward="false" selection-start-line="76" selection-start-column="22" selection-end-line="76" selection-end-column="22" />
+          <folding>
+            <element signature="e#0#18#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/neuralibm1trainer.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="954">
-          <caret line="196" column="34" lean-forward="false" selection-start-line="196" selection-start-column="34" selection-end-line="196" selection-end-column="34" />
+        <state relative-caret-position="1995">
+          <caret line="174" column="52" lean-forward="false" selection-start-line="174" selection-start-column="52" selection-end-line="174" selection-end-column="52" />
+          <folding>
+            <element signature="e#521#1725#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/T3.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-825">
+          <caret line="191" column="15" lean-forward="true" selection-start-line="191" selection-start-column="15" selection-end-line="191" selection-end-column="15" />
+          <folding>
+            <element signature="e#0#18#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/neuralibm1.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="744">
+          <caret line="315" column="28" lean-forward="true" selection-start-line="315" selection-start-column="28" selection-end-line="315" selection-end-column="28" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/neuralibm1.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2580">
+          <caret line="178" column="38" lean-forward="false" selection-start-line="178" selection-start-column="38" selection-end-line="178" selection-end-column="38" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/neuralibm1trainer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1425">
+          <caret line="99" column="27" lean-forward="false" selection-start-line="99" selection-start-column="27" selection-end-line="99" selection-end-column="27" />
+          <folding>
+            <element signature="e#521#1725#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="675">
+          <caret line="45" column="82" lean-forward="false" selection-start-line="45" selection-start-column="82" selection-end-line="45" selection-end-column="82" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vocabulary.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/neural-ibm1.ipynb">
+      <provider selected="true" editor-type-id="ipnb-editor">
+        <state>
+          <selected id="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vocabulary.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vae.ipynb">
+      <provider selected="true" editor-type-id="ipnb-editor">
+        <state>
+          <selected id="-1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vae_trainer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="675">
+          <caret line="45" column="82" lean-forward="false" selection-start-line="45" selection-start-column="82" selection-end-line="45" selection-end-column="82" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vae.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="855">
+          <caret line="186" column="4" lean-forward="false" selection-start-line="186" selection-start-column="4" selection-end-line="186" selection-end-column="4" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/neuralibm1trainer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="309">
+          <caret line="66" column="16" lean-forward="false" selection-start-line="66" selection-start-column="16" selection-end-line="66" selection-end-column="16" />
           <folding>
             <element signature="e#521#1725#0" expanded="false" />
           </folding>
@@ -394,20 +529,10 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/neuralibm1.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2394">
-          <caret line="325" column="26" lean-forward="true" selection-start-line="325" selection-start-column="26" selection-end-line="325" selection-end-column="26" />
+        <state relative-caret-position="564">
+          <caret line="458" column="0" lean-forward="true" selection-start-line="458" selection-start-column="0" selection-end-line="458" selection-end-column="0" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/vae.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-829">
-          <caret line="186" column="4" lean-forward="false" selection-start-line="186" selection-start-column="4" selection-end-line="186" selection-end-column="4" />
-          <folding>
-            <element signature="e#0#23#0" expanded="true" />
           </folding>
         </state>
       </provider>

@@ -66,6 +66,52 @@ class NeuralIBM1Model:
         name="b", initializer=tf.zeros_initializer(),
         shape=[self.y_vocabulary_size])
 
+      ### Weights for T3 ###
+      # first layer for t
+      self.mlp_Wt_ = tf.get_variable(
+        name="Wt_", initializer=glorot_uniform(),
+        shape=[self.emb_dim, self.mlp_dim])
+
+      self.mlp_bt_ = tf.get_variable(
+        name="bt_", initializer=tf.zeros_initializer(),
+        shape=[self.mlp_dim])
+
+      # first layer for i and s
+      self.mlp_Wis_ = tf.get_variable(
+        name="Wis_", initializer=glorot_uniform(),
+        shape=[self.emb_dim, self.mlp_dim])
+
+      self.mlp_bis_ = tf.get_variable(
+        name="bis_", initializer=tf.zeros_initializer(),
+        shape=[self.mlp_dim])
+
+      # layer for translation P(F|E)
+      self.mlp_W_t = tf.get_variable(
+        name="W_t", initializer=glorot_uniform(),
+        shape=[self.mlp_dim, self.y_vocabulary_size])
+
+      self.mlp_b_t = tf.get_variable(
+        name="b_t", initializer=tf.zeros_initializer(),
+        shape=[self.y_vocabulary_size])
+
+      # layer for insertion P(F|Fprev)
+      self.mlp_W_i = tf.get_variable(
+        name="W_i", initializer=glorot_uniform(),
+        shape=[self.mlp_dim, self.y_vocabulary_size])
+
+      self.mlp_b_i = tf.get_variable(
+        name="b_i", initializer=tf.zeros_initializer(),
+        shape=[self.y_vocabulary_size])
+
+      # layer for collocation P(C|Fprev)
+      self.mlp_W_s = tf.get_variable(
+        name="W_s", initializer=glorot_uniform(),
+        shape=[self.mlp_dim, 1])
+
+      self.mlp_b_s = tf.get_variable(
+        name="b_s", initializer=tf.zeros_initializer(),
+        shape=[1])
+
   def save(self, session, path="model.ckpt"):
     """Saves the model."""
     return self.saver.save(session, path)
@@ -177,30 +223,29 @@ class NeuralIBM1Model:
       mlp_input = tf.multiply(x_mlp, 1 - s) + tf.multiply(y_prev_mlp, s)
 
     if self.context == "col_discrete":
-      # shape [B, M*N, emb_dim]
-      x_embedded = tf.tile(x_embedded, [1, longest_y, 1])
-      # shape [B, N*M, emb_dim]
-      y_prev_embedded = tf.tile(y_prev_embedded, [1, longest_x, 1])
-      # shape [B, M, M*N]
-      pa_x = tf.tile(pa_x, [1, 1, longest_y])
-      x_mlp = tf.reshape(x_embedded, [batch_size * longest_x * longest_y, self.emb_dim])
-      y_prev_mlp = tf.reshape(y_prev_embedded, [batch_size * longest_y * longest_x, self.emb_dim])
-      # feed forward p(f|e)
-      h_x = tf.tanh(tf.matmul(x_mlp, self.mlp_W_) + self.mlp_b_)
-      h_x = tf.matmul(h_x, self.mlp_W) + self.mlp_b
-      pf_e = tf.nn.softmax(h_x)
-      # feed forward p(f|f_prev)
-      h_y_prev = tf.tanh(tf.matmul(y_prev_mlp, self.mlp_W_) + self.mlp_b_)
-      h_y_prev = tf.matmul(h_y_prev, self.mlp_W) + self.mlp_b
-      pf_fprev = tf.nn.softmax(h_y_prev)
-      # feed forward gate collocation p(c|f_prev)
-      h_gate = tf.tanh(tf.matmul(y_prev_mlp, self.mlp_W_) + self.mlp_b_)
-      h_gate = tf.matmul(h_gate, self.mlp_W) + self.mlp_b
-      pc_fprev = tf.sigmoid(h_gate)
+      h_t = tf.matmul(mlp_input, self.mlp_Wt_, name='x1') + self.mlp_bt_  # Shape [B*M, emb_dim]
+      h_t = tf.tanh(h_t)
+      h_t = tf.matmul(h_t, self.mlp_W_t, name='x2') + self.mlp_b_t  # Shape [B*M, emb_dim]
+
+      # P(F|Fprev) and P(C|Fprev), insertion i and collocation c
+      # Use shared first layer!
+      mlp_input = tf.reshape(y_prev_embedded, [batch_size * longest_y, self.emb_dim])
+      h_is = tf.matmul(mlp_input, self.mlp_Wis_, name='y1') + self.mlp_bis_  # Shape [B*N, emb_dim]
+      h_is = tf.tanh(h_is)
+      # This is P(F|Fprev) insertion i
+      h_i = tf.matmul(h_is, self.mlp_W_i, name='y2') + self.mlp_b_i  # Shape [B*N, emb_dim]
+      py_y = tf.nn.softmax(h_i)  # Shape: [B*N, Vy]
+      py_y = tf.reshape(py_y, [batch_size, longest_y, self.y_vocabulary_size])  # Shape [B, N, Vy]
+      # This is s(Fprev) for P(C|Fprev) = Bern(s(Fprev))
+      h_s = tf.matmul(h_is, self.mlp_W_s, name='3')
+      h_s = h_s + self.mlp_b_s
+      s = tf.sigmoid(h_s)
+      s = tf.squeeze(s)  # get rid of trainling 1-dimension
+      s = tf.reshape(s, [batch_size, longest_y])
 
       # Here we apply the MLP to our input.
     if self.context == "col_discrete":
-      h = tf.multiply(pf_e, 1 - pc_fprev) + tf.multiply(pf_fprev, pc_fprev)
+      h = h_t
     else:
       h = tf.matmul(mlp_input, self.mlp_W_) + self.mlp_b_  # affine transformation
       h = tf.tanh(h)                                       # non-linearity
@@ -214,11 +259,11 @@ class NeuralIBM1Model:
     # Now we perform a softmax which operates on a per-row basis.
     py_xa = tf.nn.softmax(h)
     # add case for context
-    if self.context=="concat" or self.context=="gate" or self.context=="col_discrete":
+    if self.context=="concat" or self.context=="gate":
       py_xa = tf.reshape(py_xa, [batch_size, longest_x * longest_y, self.y_vocabulary_size])
     else:
-      py_xa = tf.reshape(py_xa, [batch_size, longest_x, self.y_vocabulary_size])
-    
+      # This is P(F|E)
+      py_xa = tf.reshape(py_xa, [batch_size, longest_x, self.y_vocabulary_size])  # Shape [B, M, Vy]
     # 2.c Marginalise alignments: \sum_a P(a|x) P(Y|x,a)
 
     # Here comes a rather fancy matrix multiplication.
@@ -236,6 +281,10 @@ class NeuralIBM1Model:
     # Note: P(y|x) = prod_j p(y_j|x) = prod_j sum_aj p(aj|m)p(y_j|x_aj) 
     #
     py_x = tf.matmul(pa_x, py_xa)  # Shape: [B, N, Vy]
+    if self.context=="col_discrete":
+      s_tiled = tf.expand_dims(s, 2)  # Shape: [B, N, 1]
+      s_tiled = tf.tile(s_tiled, [1, 1, self.y_vocabulary_size])  # Shape: [B, N, Vy]
+      py_xa = tf.multiply(s_tiled, py_x, name='s1') + tf.multiply(1 - s_tiled, py_y, name='s2')
 
     # This calculates the accuracy, i.e. how many predictions we got right.
     predictions = tf.argmax(py_x, axis=2)
@@ -270,6 +319,9 @@ class NeuralIBM1Model:
     self.accuracy = acc
     self.accuracy_correct = tf.cast(acc_correct, tf.int64)
     self.accuracy_total = tf.cast(acc_total, tf.int64)
+    if(self.context == "col_discrete"):
+      self.s = s
+      self.py_y = py_y
     
     
   def evaluate(self, data, ref_alignments, batch_size=4):
@@ -285,8 +337,11 @@ class NeuralIBM1Model:
     for batch_id, batch in enumerate(iterate_minibatches(data, batch_size=batch_size)):
       x, y = prepare_data(batch, self.x_vocabulary, self.y_vocabulary)
       y_len = np.sum(np.sign(y), axis=1, dtype="int64")
-      
-      align, prob, acc_correct, acc_total = self.get_viterbi(x, y) 
+
+      if self.context == "col_discrete":
+        align, prob, acc_correct, acc_total = self.get_viterbi_col(x, y)
+      else:
+        align, prob, acc_correct, acc_total = self.get_viterbi(x, y)
       accuracy_correct += acc_correct
       accuracy_total += acc_total
       
@@ -351,5 +406,56 @@ class NeuralIBM1Model:
         fprev = j
     
     return alignments, probabilities, acc_correct, acc_total
+
+  def get_viterbi_col(self, x, y):
+    """Returns the Viterbi alignment for (x, y)"""
+
+    y_prev = np.roll(y, 1, axis=1)
+    y_prev[:, 0] = 0
+
+    feed_dict = {
+      self.x: x,  # English
+      self.y: y,  # French
+      self.y_prev : y_prev
+    }
+
+    # run model on this input
+    py_xa, py_y, s, acc_correct, acc_total = self.session.run(
+      [self.py_xa,
+       self.py_y,
+       self.s,
+       self.accuracy_correct,
+       self.accuracy_total],
+       feed_dict=feed_dict)
+
+    # things to return
+    batch_size, longest_y = y.shape
+    _, longest_x = x.shape
+    alignments = np.zeros((batch_size, longest_y), dtype="int64")
+    probabilities = np.zeros((batch_size, longest_y), dtype="float32")
+
+    for b, sentence in enumerate(y):
+      for j, french_word in enumerate(sentence):
+        if french_word == 0:  # Padding
+          break
+        fprev = j
+        sj = s[b,j]
+        # if b in range(20): print(sj)
+        c = int(np.random.uniform() < sj) # sample c ~ Bernouilli(sj)
+        if c == 0: # then we align
+            probs = py_xa[b, : , y[b,j]] # y[b,j] means only the word f_j in the sentence b
+            a_j = probs.argmax()
+            p_j = probs[a_j]
+        if c == 1: # then we `insert` (i.e. NULL align - see NLP2 blog post)
+            # if b in range(20): print('Null aligned')
+            a_j = 0 # NULL align
+            p_j = 1
+
+        alignments[b, j] = a_j
+        probabilities[b, j] = p_j
+
+
+    return alignments, probabilities, acc_correct, acc_total
+
 
   
