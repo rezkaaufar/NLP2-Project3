@@ -162,13 +162,11 @@ class VAE:
     #  we will use these representations to independently predict a vector of means
     #  and a vector of (log) variances (as below)
 
-    ### CHANGE ###
-    # IMPORTANT: used for computing the ELBO:
-    # alpha = tf.matmul(h, self.alpha_W) + self.alpha_b  # [B * M, z_dim]
-    # beta = tf.matmul(h, self.beta_W) + self.beta_b  # [B * M, z_dim]
-    # IMPORTANT: used for sampling gate values s:
-    # a = tf.matmul(h, self.a_W) + self.a_b  # [B * M, z_dim]
-    # b = tf.matmul(h, self.b_W) + self.b_b  # [B * M, z_dim]
+
+    alpha = tf.matmul(h, self.alpha_W) + self.alpha_b  # [B * M, z_dim]
+    beta = tf.matmul(h, self.beta_W) + self.beta_b  # [B * M, z_dim]
+    a = tf.matmul(h, self.a_W) + self.a_b  # [B * M, z_dim]
+    b = tf.matmul(h, self.b_W) + self.b_b  # [B * M, z_dim]
 
     z_mu = tf.matmul(h, self.mu_W) + self.mu_b  # [B * M, z_dim]
     z_log_sig_sq = tf.matmul(h, self.log_sig_sq_W) + self.log_sig_sq_b  # [B * M, h_dim]
@@ -181,15 +179,13 @@ class VAE:
     # First, we sample noise vectors from a standard Gaussian
     # (check the lecture notes if you are confused about this)
 
-    ### CHANGE ###
-    # u = tf.random_uniform(tf.shape(z_b), minval=0, maxval=1, dtype=tf.float32)  # [B * M, h_dim]
+
+    u = tf.random_uniform(tf.shape(a), minval=0, maxval=1, dtype=tf.float32)  # [B * M, h_dim]
 
     epsilon = tf.random_normal(tf.shape(z_log_sig_sq), 0, 1, dtype=tf.float32)  # [B * M, h_dim]
 
-    ### CHANGE ###
-    # Formula: s = (1-u^{1/alpha})^{1/beta}
     # s is distributed by Kuma not Beta due to the reparameterization trick
-    # s = tf.pow(tf.add(-tf.pow(u, tf.reciprocal(alpha)), 1), tf.reciprocal(beta))
+    s = tf.pow(tf.add(-tf.pow(u, tf.reciprocal(alpha)), 1), tf.reciprocal(beta))
 
     # Our sampled z is a **deterministic** function of the random noise (epsilon)
     # this pushes all sources of non-determinism out of the computational graph
@@ -200,11 +196,11 @@ class VAE:
     # This is the *generative* network
     #  it conditions on our sampled z to predict the parameters of a Categorical over the vocabulary
 
-    ### CHANGE ###
-    # h_dec = tf.matmul(s, self.y_W) + self.y_b  # [B * M, h_dim]
+    ### comment ###
+    h_dec = tf.matmul(s, self.y_W) + self.y_b  # [B * M, h_dim]
 
     # Here we employ one non-linear layer (but this is optional)
-    h_dec = tf.matmul(z, self.y_W) + self.y_b  # [B * M, h_dim]
+    # h_dec = tf.matmul(z, self.y_W) + self.y_b  # [B * M, h_dim]
     h_dec = tf.tanh(h_dec)  # Shape: [B * M, h_dim]
     # and these are our logits (the input to a softmax)
     # tensorflow prefers to use logits to compute the cross entropy loss
@@ -224,21 +220,22 @@ class VAE:
     ce = tf.reduce_mean(ce_per_sentence)
     self.ce = ce
 
-    ### CHANGE ###
-    # euler = 0.5772156649
-    # approx = tf.add_n([tf.reciprocal(m + alpha*beta) * sp.beta(m * tf.reciprocal(alpha, beta)) for m in range(1,4)])
-    # first = tf.multiply(tf.div(alpha - a, alpha), - euler - tf.digamma(beta) - tf.reciprocal(beta))
-    # second = tf.log(tf.multiply(alpha, beta)) + tf.log(sp.beta(a,b)) - tf.multiply(beta - 1, tf.reciprocal(beta))
-    # third = tf.multiply(tf.multiply(b - 1, beta), approx)
-    # kl = first + second + third
+
+    euler = 0.5772156649
+    first = tf.multiply(tf.div(alpha - a, alpha), - euler - tf.digamma(beta) - tf.reciprocal(beta))
+    second = tf.log(tf.multiply(alpha, beta)) + tf.log(sp.beta(a,b)) - tf.multiply(beta - 1, tf.reciprocal(beta))
+    third_a = tf.add_n([tf.reciprocal(m + alpha*beta) * sp.beta(m * tf.reciprocal(alpha, beta)) for m in range(1,4)])
+    third = tf.multiply(tf.multiply(b - 1, beta), third_a)
+    ### comment ###
+    kl = first + second + third
 
     # and it includes the analytical KL between our approximate posterior and prior
     # (check lecture notes and/or the notebook for more details)
     # reminder: z_mu and z_log_sig_sq's shapes are # [B * M, z_dim]
     #           thus we sum along the second axis
-    kl = -0.5 * tf.reduce_sum(
-      1 + z_log_sig_sq - tf.square(z_mu) - tf.exp(z_log_sig_sq), 1)
-    kl = tf.reshape(kl, tf.shape(self.x))  # reshape back to [B, M]
+    #kl = -0.5 * tf.reduce_sum(
+    #  1 + z_log_sig_sq - tf.square(z_mu) - tf.exp(z_log_sig_sq), 1)
+    # kl = tf.reshape(kl, tf.shape(self.x))  # reshape back to [B, M]
     # we sum KL of actual words in a sentence
     #  (that's why we multiply timesteps by a mask)
     #  and take mean over samples
