@@ -1,26 +1,27 @@
 import tensorflow as tf
 import numpy as np
+import scipy.special as sp
 from utils import *
 
 
 class VAE:
   """A simple Variational Auto Encoder."""
-  
+
   def __init__(self, batch_size=8, vocabulary=None, emb_dim=32, rnn_dim=32, z_dim=16):
 
     self.batch_size = batch_size
     self.emb_dim = emb_dim
     self.rnn_dim = rnn_dim
     self.z_dim = z_dim
-    
+
     self.vocabulary = vocabulary
-    self.vocabulary_size = len(vocabulary)    
+    self.vocabulary_size = len(vocabulary)
 
     self._create_placeholders()
     self._create_weights()
     self._build_model()
     self.saver = tf.train.Saver()
-    
+
   def _create_placeholders(self):
     """We define placeholders to feed the data to TensorFlow."""
     # "None" means the batches may have a variable batch size and length.
@@ -28,6 +29,39 @@ class VAE:
 
   def _create_weights(self):
     """Create all weights for this VAE."""
+
+    ### CHANGE ###
+    self.a_W = tf.get_variable(
+      name="a_W", initializer=tf.random_normal_initializer(),
+      shape=[self.rnn_dim, self.z_dim])
+
+    self.a_b = tf.get_variable(
+      name="a_b", initializer=tf.random_normal_initializer(),
+      shape=[self.z_dim])
+
+    self.b_W = tf.get_variable(
+      name="b_W", initializer=tf.random_normal_initializer(),
+      shape=[self.rnn_dim, self.z_dim])
+
+    self.b_b = tf.get_variable(
+      name="b_b", initializer=tf.random_normal_initializer(),
+      shape=[self.z_dim])
+
+    self.alpha_W = tf.get_variable(
+      name="alpha_W", initializer=tf.random_normal_initializer(),
+      shape=[self.rnn_dim, self.z_dim])
+
+    self.alpha_b = tf.get_variable(
+      name="alpha_b", initializer=tf.random_normal_initializer(),
+      shape=[self.z_dim])
+
+    self.beta_W = tf.get_variable(
+      name="beta_W", initializer=tf.random_normal_initializer(),
+      shape=[self.rnn_dim, self.z_dim])
+
+    self.beta_b = tf.get_variable(
+      name="beta_b", initializer=tf.random_normal_initializer(),
+      shape=[self.z_dim])
 
     self.mu_W = tf.get_variable(
       name="mu_W", initializer=tf.random_normal_initializer(),
@@ -44,7 +78,7 @@ class VAE:
     self.log_sig_sq_b = tf.get_variable(
       name="log_sig_sq_b", initializer=tf.random_normal_initializer(),
       shape=[self.z_dim])
-    
+
     self.y_W = tf.get_variable(
       name="y_W", initializer=tf.random_normal_initializer(),
       shape=[self.z_dim, self.rnn_dim])
@@ -52,22 +86,22 @@ class VAE:
     self.y_b = tf.get_variable(
       name="y_b", initializer=tf.random_normal_initializer(),
       shape=[self.rnn_dim])
-    
+
     self.softmax_W = tf.get_variable(
       name="softmax_W", initializer=tf.random_normal_initializer(),
       shape=[self.rnn_dim, self.vocabulary_size])
-    
+
     self.softmax_b = tf.get_variable(
       name="softmax_b", initializer=tf.random_normal_initializer(),
-      shape=[self.vocabulary_size])    
+      shape=[self.vocabulary_size])
 
   def save(self, session, path="model.ckpt"):
     """Saves the model."""
     return self.saver.save(session, path)
-    
+
   def _build_model(self):
     """Builds the computational graph for our model."""
-    
+
     # Some useful values from the input data
     batch_size = tf.shape(self.x)[0]
     longest_x = tf.shape(self.x)[1]
@@ -82,12 +116,12 @@ class VAE:
     #  it does so from x's 1-hot encoding
     #  thus the first step is to embed x
 
-    # Let's create a word embedding matrix. 
+    # Let's create a word embedding matrix.
     # These are trainable parameters, so we use tf.Variable.
     embeddings = tf.get_variable(
       name="embeddings", initializer=tf.random_normal_initializer(),
-      shape=[self.vocabulary_size, self.emb_dim])    
-    
+      shape=[self.vocabulary_size, self.emb_dim])
+
     # Now we start defining our graph.
     # This looks up the embedding vector for each word.
     # Shape: [batch_size, time_steps, embedding_size]
@@ -103,30 +137,38 @@ class VAE:
     cell_bw = tf.contrib.rnn.LSTMCell(num_units=self.rnn_dim, state_is_tuple=True)
 
     # Now let's transform our word embeddings!
-    # Function `tf.nn.bidirectional_dynamic_rnn` will return a sequence of 
+    # Function `tf.nn.bidirectional_dynamic_rnn` will return a sequence of
     # hidden states for the inputs (the embeddings) that we provide.
     # We also need to give it the lengths of the sequences, otherwise
-    # it would keep updating the hidden states for sentences that have no 
+    # it would keep updating the hidden states for sentences that have no
     # more inputs.
     # `Dynamic` means that the RNN will unroll for the required number of time steps
-    # in our batch, which can be different per batch. 
-    # We do not have to tell it how many time steps to unroll. 
+    # in our batch, which can be different per batch.
+    # We do not have to tell it how many time steps to unroll.
     outputs, states = tf.nn.bidirectional_dynamic_rnn(
-      cell_fw=cell_fw, cell_bw=cell_bw, inputs=embedded, 
+      cell_fw=cell_fw, cell_bw=cell_bw, inputs=embedded,
       sequence_length=x_len, dtype=tf.float32)
-    
+
     # Now let's combine the forward and backward states,
     # so that we have 1 representation per time step.
     # It is more common to concatenate, but summing saves us some parameters.
     h = outputs[0] + outputs[1]  # [B, M, rnn_dim]
     h_dim = tf.shape(h)[-1]  # [rnn_dim] or [2*rnn_dim] if we concatenate
-    
+
     # For z, we need mu and log sigma^2
     h = tf.reshape(h, [-1, h_dim])  # [B * M, h_dim]
 
     # At this point, we have context-aware representations of each and every word
     #  we will use these representations to independently predict a vector of means
     #  and a vector of (log) variances (as below)
+
+    ### CHANGE ###
+    # IMPORTANT: used for computing the ELBO:
+    # alpha = tf.matmul(h, self.alpha_W) + self.alpha_b  # [B * M, z_dim]
+    # beta = tf.matmul(h, self.beta_W) + self.beta_b  # [B * M, z_dim]
+    # IMPORTANT: used for sampling gate values s:
+    # a = tf.matmul(h, self.a_W) + self.a_b  # [B * M, z_dim]
+    # b = tf.matmul(h, self.b_W) + self.b_b  # [B * M, z_dim]
 
     z_mu = tf.matmul(h, self.mu_W) + self.mu_b  # [B * M, z_dim]
     z_log_sig_sq = tf.matmul(h, self.log_sig_sq_W) + self.log_sig_sq_b  # [B * M, h_dim]
@@ -138,7 +180,16 @@ class VAE:
 
     # First, we sample noise vectors from a standard Gaussian
     # (check the lecture notes if you are confused about this)
+
+    ### CHANGE ###
+    # u = tf.random_uniform(tf.shape(z_b), minval=0, maxval=1, dtype=tf.float32)  # [B * M, h_dim]
+
     epsilon = tf.random_normal(tf.shape(z_log_sig_sq), 0, 1, dtype=tf.float32)  # [B * M, h_dim]
+
+    ### CHANGE ###
+    # Formula: s = (1-u^{1/alpha})^{1/beta}
+    # s is distributed by Kuma not Beta due to the reparameterization trick
+    # s = tf.pow(tf.add(-tf.pow(u, tf.reciprocal(alpha)), 1), tf.reciprocal(beta))
 
     # Our sampled z is a **deterministic** function of the random noise (epsilon)
     # this pushes all sources of non-determinism out of the computational graph
@@ -148,6 +199,9 @@ class VAE:
     # ##############################################
     # This is the *generative* network
     #  it conditions on our sampled z to predict the parameters of a Categorical over the vocabulary
+
+    ### CHANGE ###
+    # h_dec = tf.matmul(s, self.y_W) + self.y_b  # [B * M, h_dim]
 
     # Here we employ one non-linear layer (but this is optional)
     h_dec = tf.matmul(z, self.y_W) + self.y_b  # [B * M, h_dim]
@@ -169,6 +223,14 @@ class VAE:
     ce_per_sentence = tf.reduce_sum(masked_losses, axis=1)
     ce = tf.reduce_mean(ce_per_sentence)
     self.ce = ce
+
+    ### CHANGE ###
+    # euler = 0.5772156649
+    # approx = tf.add_n([tf.reciprocal(m + alpha*beta) * sp.beta(m * tf.reciprocal(alpha, beta)) for m in range(1,4)])
+    # first = tf.multiply(tf.div(alpha - a, alpha), - euler - tf.digamma(beta) - tf.reciprocal(beta))
+    # second = tf.log(tf.multiply(alpha, beta)) + tf.log(sp.beta(a,b)) - tf.multiply(beta - 1, tf.reciprocal(beta))
+    # third = tf.multiply(tf.multiply(b - 1, beta), approx)
+    # kl = first + second + third
 
     # and it includes the analytical KL between our approximate posterior and prior
     # (check lecture notes and/or the notebook for more details)
